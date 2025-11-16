@@ -1,0 +1,13 @@
+node_modules/
+npm-debug.log
+.env
+.DS_Store
+.vscode/
+cargarage.db
+*.sqlite
+*.log
+dist/
+coverage/
+# mac/windows thumbnail caches
+Thumbs.db
+Icon?
