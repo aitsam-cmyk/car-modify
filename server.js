@@ -1,3 +1,4 @@
+// ✅ Express built-in parsers + clean setup
 const express = require('express');
 const app = express();
 
@@ -6,38 +7,35 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
+/* ---------- Config ---------- */
 const PORT = process.env.PORT || 3000;
-
-/* ---------- Middleware ---------- */
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb' }));
-
-// Serve static files (images/css/html) from project root
-app.use(express.static(path.join(__dirname)));
-
-/* ---------- Health Check & Root ---------- */
-// Health check: Render ke liye helpful
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
-
-// Root par modify.html serve
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'modify.html'));
-});
-
-/* ---------- SQLite Connection ---------- */
-// Render par persistent data FREE plan me nahi hota.
-// DATABASE_PATH env var se path control karein (default: ./data/cargarage.db)
 const DB_DIR = path.join(__dirname, 'data');
 if (!fs.existsSync(DB_DIR)) {
     fs.mkdirSync(DB_DIR, { recursive: true });
 }
-
-// Agar env var set hai to use karein, warna default
 const dbPath = process.env.DATABASE_PATH || path.join(DB_DIR, 'cargarage.db');
 
+/* ---------- Middleware ---------- */
+app.use(cors());
+
+// ⚠️ Parsers ko sirf **ek dafa** configure karein (no duplicates)
+// 50MB limit rakhi hai, aur urlencoded ke liye extended: true MUST hai
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Static files (images/css/html) — project root se serve
+app.use(express.static(path.join(__dirname)));
+
+/* ---------- Health Check & Root ---------- */
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'modify.html'));
+});
+
+/* ---------- SQLite Connection & Schema ---------- */
 const db = new sqlite3.Database(
     dbPath,
     sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
@@ -50,7 +48,7 @@ const db = new sqlite3.Database(
     }
 );
 
-// Create cars table if it doesn't exist
+// ✅ Ensure table (IF NOT EXISTS) — first run par create ho jayega
 db.run(`
   CREATE TABLE IF NOT EXISTS cars (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,9 +62,11 @@ db.run(`
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
   )
-`);
+`, (err) => {
+    if (err) console.error('Table creation error:', err);
+});
 
-// Insert default data if table is empty
+// ✅ Seed only if empty
 db.get('SELECT COUNT(*) as count FROM cars', (err, row) => {
     if (err) {
         console.error('Count query error:', err);
@@ -200,17 +200,23 @@ app.patch('/api/cars/:id/sold', (req, res) => {
     );
 });
 
-/* ---------- Start server (single listen) ---------- */
-app.listen(PORT, () => {
+/* ---------- Start server (single listen + error handler) ---------- */
+const server = app.listen(PORT, () => {
     console.log(`🚗 Car Garage Server running at http://localhost:${PORT}`);
 });
 
-/* ---------- Graceful shutdown: close DB ---------- */
-process.on('SIGTERM', () => {
-    db.close();
-    process.exit(0);
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} busy. Kill the process using it or set PORT to a different value.`);
+    } else {
+        console.error('Server error:', err);
+    }
 });
-process.on('SIGINT', () => {
-    db.close();
+
+/* ---------- Graceful shutdown ---------- */
+function shutdown() {
+    try { db.close(); } catch {}
     process.exit(0);
-});
+}
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
