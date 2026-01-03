@@ -9,9 +9,12 @@ const fs = require('fs');
 
 /* ---------- Config ---------- */
 const PORT = process.env.PORT || 3000;
+
+// ⚠️ Agar Railway volume use karna ho to DATABASE_PATH ko env me set karein,
+// e.g. "/data/cargarage.db" (Volume mount path). Warna local "data/cargarage.db" ban jayega.
 const DB_DIR = path.join(__dirname, 'data');
-if (!fs.existsSync(DB_DIR)) {
-    fs.mkdirSync(DB_DIR, { recursive: true });
+if (!process.env.DATABASE_PATH) {
+    if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
 }
 const dbPath = process.env.DATABASE_PATH || path.join(DB_DIR, 'cargarage.db');
 
@@ -19,7 +22,6 @@ const dbPath = process.env.DATABASE_PATH || path.join(DB_DIR, 'cargarage.db');
 app.use(cors());
 
 // ⚠️ Parsers ko sirf **ek dafa** configure karein (no duplicates)
-// 50MB limit rakhi hai, aur urlencoded ke liye extended: true MUST hai
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -31,6 +33,7 @@ app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
+// Root par aapka main HTML
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'modify.html'));
 });
@@ -200,9 +203,9 @@ app.patch('/api/cars/:id/sold', (req, res) => {
     );
 });
 
-/* ---------- Start server (single listen + error handler) ---------- */
-const server = app.listen(PORT, () => {
-    console.log(`🚗 Car Garage Server running at http://localhost:${PORT}`);
+/* ---------- Start server (Railway requires 0.0.0.0) ---------- */
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚗 Car Garage Server running at http://0.0.0.0:${PORT}`);
 });
 
 server.on('error', (err) => {
