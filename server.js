@@ -19,7 +19,31 @@ if (!process.env.DATABASE_PATH) {
 const dbPath = process.env.DATABASE_PATH || path.join(DB_DIR, 'cargarage.db');
 
 /* ---------- Middleware ---------- */
-app.use(cors());
+
+// ✅ CORS (robust) — PUT/PATCH/DELETE + preflight OPTIONS allow
+// Same-origin (HTML/API yahi se serve) mein simple cors() bhi chalega,
+// lekin ye block zyada safe hai (preflight ko handle karta hai).
+const allowedOrigins = [
+    // Agar front-end alag domain par ho to yahan add karein:
+    // 'https://your-frontend.up.railway.app'
+];
+// NOTE: same-origin load par origin null/undefined ho sakta hai; us case me allow karein.
+app.use(cors({
+    origin: (origin, cb) => {
+        if (!origin) return cb(null, true); // same-origin / curl / server-side
+        if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) return cb(null, true);
+        return cb(new Error('CORS not allowed'), false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Preflight handler (OPTIONS) — kuch browsers strict hote hain
+app.options('*', (req, res) => {
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.status(204).end();
+});
 
 // ⚠️ Parsers ko sirf **ek dafa** configure karein (no duplicates)
 app.use(express.json({ limit: '50mb' }));
@@ -109,6 +133,18 @@ db.get('SELECT COUNT(*) as count FROM cars', (err, row) => {
     }
 });
 
+/* ---------- Helpers ---------- */
+
+// 🧷 Optional: filenames with spaces ko URL-safe banane ke liye helper
+function safePath(p) {
+    // './gli 2011.jpg' -> '/gli%2011.jpg' (static serve se accessible)
+    if (!p) return p;
+    // remove leading './' for browser path, then encode
+    const cleaned = p.replace(/^\.\//, '/');
+    const parts = cleaned.split('/').map(seg => encodeURIComponent(seg));
+    return parts.join('/');
+}
+
 /* ---------- API Routes ---------- */
 
 // GET all cars
@@ -119,8 +155,8 @@ app.get('/api/cars', (req, res) => {
             id: car.id,
             name: car.name,
             price: car.price,
-            mainImg: car.mainImg,
-            imgs: JSON.parse(car.imgs),
+            mainImg: safePath(car.mainImg),
+            imgs: JSON.parse(car.imgs).map(safePath),
             desc: car.desc,
             specs: JSON.parse(car.specs),
             sold: car.sold === 1
@@ -139,8 +175,8 @@ app.get('/api/cars/:id', (req, res) => {
             id: row.id,
             name: row.name,
             price: row.price,
-            mainImg: row.mainImg,
-            imgs: JSON.parse(row.imgs),
+            mainImg: safePath(row.mainImg),
+            imgs: JSON.parse(row.imgs).map(safePath),
             desc: row.desc,
             specs: JSON.parse(row.specs),
             sold: row.sold === 1
@@ -157,7 +193,16 @@ app.post('/api/cars', (req, res) => {
         `INSERT INTO cars (name, price, mainImg, imgs, desc, specs, sold) VALUES (?, ?, ?, ?, ?, ?, ?)`, [name, price, mainImg, JSON.stringify(imgs || []), desc || '', JSON.stringify(specs || []), 0],
         function(err) {
             if (err) return res.status(500).json({ error: 'Failed to add car' });
-            res.status(201).json({ id: this.lastID, name, price, mainImg, imgs: imgs || [], desc: desc || '', specs: specs || [], sold: false });
+            res.status(201).json({
+                id: this.lastID,
+                name,
+                price,
+                mainImg: safePath(mainImg),
+                imgs: (imgs || []).map(safePath),
+                desc: desc || '',
+                specs: specs || [],
+                sold: false
+            });
         }
     );
 });
@@ -175,7 +220,16 @@ app.put('/api/cars/:id', (req, res) => {
         function(err) {
             if (err) return res.status(500).json({ error: 'Failed to update car' });
             if (this.changes === 0) return res.status(404).json({ error: 'Car not found' });
-            res.json({ id: Number(id), name, price, mainImg, imgs: imgs || [], desc: desc || '', specs: specs || [], sold: !!sold });
+            res.json({
+                id: Number(id),
+                name,
+                price,
+                mainImg: safePath(mainImg),
+                imgs: (imgs || []).map(safePath),
+                desc: desc || '',
+                specs: specs || [],
+                sold: !!sold
+            });
         }
     );
 });
