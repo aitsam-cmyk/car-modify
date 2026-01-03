@@ -3,6 +3,7 @@ npm-debug.log
 .env
 node_modules
 .env
+data/*.db
 .DS_Store
 .vscode/
 cargarage.db
