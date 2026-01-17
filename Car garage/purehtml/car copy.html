@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Car Garage — Premium Car Deals</title>
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .modal-content img {
+            width: 100%;
+            border-radius: 10px;
+        }
+        
+        .close {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+         :root {
+            --accent: #0b4a6f;
+            --accent-2: #f5c041;
+            --bg: #f6f8fb;
+            --card: #ffffff;
+            --muted: #6b7280;
+            --radius: 12px;
+            --glass: rgba(11, 74, 111, 0.06);
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        }
+        
+        * {
+            box-sizing: border-box
+        }
+        
+        body {
+            margin: 0;
+            background: linear-gradient(180deg, #f6f8fb 0%, #ffffff 100%);
+            color: #07102a;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale
+        }
+        
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 28px;
+            background: var(--card);
+            box-shadow: 0 6px 18px rgba(9, 20, 34, 0.04);
+            position: sticky;
+            top: 0;
+            z-index: 50
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px
+        }
+        
+        .logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), #163b5a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 18px
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--accent)
+        }
+        
+        nav a {
+            margin-left: 18px;
+            text-decoration: none;
+            color: var(--muted);
+            font-weight: 600
+        }
+        
+        nav a:hover {
+            color: var(--accent)
+        }
+        
+        .slider-wrap {
+            position: relative;
+            overflow: hidden;
+            max-height: 420px;
+            border-radius: 14px;
+            margin: 18px auto;
+            max-width: 1200px
+        }
+        
+        .slides {
+            display: flex;
+            transition: transform .7s ease;
+            height: 420px
+        }
+        
+        .slide {
+            min-width: 100%;
+            height: 420px;
+            position: relative
+        }
+        
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block
+        }
+        
+        .slide-overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(2, 6, 23, 0.0) 10%, rgba(2, 6, 23, 0.25) 60%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 34px;
+            color: white
+        }
+        
+        .slider-controls {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 12px;
+            display: flex;
+            gap: 8px
+        }
+        
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer
+        }
+        
+        .dot.active {
+            background: var(--accent-2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2)
+        }
+        
+        .arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(9, 20, 34, 0.08)
+        }
+        
+        .arrow.left {
+            left: 12px
+        }
+        
+        .arrow.right {
+            right: 12px
+        }
+        
+        .arrow svg {
+            width: 20px;
+            height: 20px;
+            color: var(--accent)
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 28px auto;
+            padding: 0 18px
+        }
+        
+        h2.section-title {
+            font-size: 22px;
+            color: #07102a;
+            margin: 8px 0 18px;
+            text-align: center
+        }
+        
+        .row-wrap {
+            position: relative
+        }
+        
+        .car-row {
+            display: flex;
+            gap: 18px;
+            overflow-x: auto;
+            padding: 12px 6px;
+            scroll-behavior: smooth
+        }
+        
+        .car-card {
+            min-width: 240px;
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(11, 20, 34, 0.06);
+            flex-shrink: 0;
+            padding: 10px;
+            cursor: pointer;
+            transition: transform .18s
+        }
+        
+        .car-card:hover {
+            transform: translateY(-6px)
+        }
+        
+        .car-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 8px
+        }
+        
+        .car-card .meta {
+            padding: 8px 6px
+        }
+        
+        .car-card .name {
+            font-weight: 700;
+            color: #07102a;
+            margin: 6px 0
+        }
+        
+        .car-card .price {
+            color: var(--accent);
+            font-weight: 800
+        }
+        
+        .scroll-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--glass);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20
+        }
+        
+        .scroll-btn.left {
+            left: -8px
+        }
+        
+        .scroll-btn.right {
+            right: -8px
+        }
+        
+        .sold {
+            opacity: 0.55;
+            pointer-events: none;
+            position: relative
+        }
+        
+        .sold::after {
+            content: "SOLD";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #d9534f;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-weight: 700
+        }
+        
+        .modal-back {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 80
+        }
+        
+        .modal {
+            background: var(--card);
+            border-radius: 12px;
+            max-width: 900px;
+            width: 92%;
+            display: flex;
+            gap: 18px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .modal .left {
+            flex: 1;
+            position: relative;
+        }
+        /* Gallery inside modal */
+        
+        .gallery {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .gallery img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        
+        .gallery img.active {
+            display: block;
+        }
+        
+        .g-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 6px;
+            z-index: 10;
+        }
+        
+        .g-arrow.left {
+            left: 8px;
+        }
+        
+        .g-arrow.right {
+            right: 8px;
+        }
+        
+        .modal .right {
+            flex: 1;
+            padding: 22px
+        }
+        
+        .modal .right h3 {
+            margin: 0 0 8px
+        }
+        
+        .modal .specs {
+            color: var(--muted);
+            line-height: 1.6
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            font-weight: 700;
+            margin-top: 12px
+        }
+        
+        .btn.wh {
+            background: #25D366;
+            color: white
+        }
+        
+        .close-x {
+            position: absolute;
+            right: 12px;
+            top: 8px;
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #333
+        }
+        
+        footer {
+            padding: 26px;
+            text-align: center;
+            color: var(--muted);
+            margin-top: 28px
+        }
+        
+        @media (max-width:880px) {
+            .modal {
+                flex-direction: column
+            }
+            .slides {
+                height: 260px
+            }
+            .slide {
+                height: 260px
+            }
+            .slider-wrap {
+                height: 260px
+            }
+            .car-card img {
+                height: 120px
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="logo">AM</div>
+            <div>
+                <h1>Car Garage</h1>
+                <div style="font-size:12px;color:var(--muted)">Premium Used & New Cars</div>
+            </div>
+        </div>
+
+        <nav>
+            <a href="#top-slider">Home</a>
+            <a href="#available">Available Cars</a>
+            <a href="#sold">Sold Cars</a>
+            <a href="#contact">Contact</a>
+        </nav>
+    </header>
+
+    <!-- TOP SLIDER -->
+    <div class="slider-wrap" id="top-slider">
+        <div class="slides" id="slides">
+            <div class="slide"><img src="./pic1.png" alt="">
+                <div class="slide-overlay">
+                    <h2>Quality Cars. Fair Prices.</h2>
+                </div>
+            </div>
+            <div class="slide"><img src="./pic2.png" alt="">
+                <div class="slide-overlay">
+                    <h2>Drive Home Today</h2>
+                </div>
+            </div>
+            <div class="slide"><img src="./pic3.png" alt="">
+                <div class="slide-overlay">
+                    <h2>Trade-ins Welcome</h2>
+                </div>
+            </div>
+        </div>
+        <button class="arrow left" id="slidePrev" aria-label="previous slide">❮</button>
+        <button class="arrow right" id="slideNext" aria-label="next slide">❯</button>
+        <div class="slider-controls" id="dots">
+            <div class="dot active" data-index="0"></div>
+            <div class="dot" data-index="1"></div>
+            <div class="dot" data-index="2"></div>
+        </div>
+    </div>
+
+    <!-- AVAILABLE CARS -->
+    <div class="container" id="available">
+        <h2 class="section-title">Available Cars</h2>
+        <div class="row-wrap">
+            <button class="scroll-btn left" onclick="scrollRow('rowAvailable', -300)">&larr;</button>
+            <div class="car-row" id="rowAvailable">
+                <div class="car-card" onclick="openModal({
+          name:'Suzuki Cultus 2006',
+          price:'PKR 810,000',
+          imgs:['car2a.jpg','car2b.jpg','car2c.jpg'],
+          desc:'Genuine interior, accident-free, recent tires.',
+          specs:['Engine: 1800cc','Mileage: 45,000 km','Condition: Very Good']
+        })">
+                    <img src="car2a.jpg" alt="Honda Civic">
+                    <div class="meta">
+                        <div class="name">Honda Civic 2020</div>
+                        <div class="price">PKR 52,00,000</div>
+                    </div>
+                </div>
+
+                <div class="car-card" onclick="openModal({
+          name:'Suzuki Alto 2021',
+          price:'PKR 20,80,000',
+          imgs:['car3.jpg','car3b.jpg'],
+          desc:'Low mileage, ideal city car.',
+          specs:['Engine: 660cc','Mileage: 28,000 km','Condition: Excellent']
+        })">
+                    <img src="car3.jpg" alt="Suzuki Alto">
+                    <div class="meta">
+                        <div class="name">Suzuki Alto 2021</div>
+                        <div class="price">PKR 20,80,000</div>
+                    </div>
+                </div>
+            </div>
+            <button class="scroll-btn right" onclick="scrollRow('rowAvailable', 300)">&rarr;</button>
+        </div>
+    </div>
+
+    <!-- SOLD CARS -->
+    <div style="background:linear-gradient(180deg,#fff8f9,#fff);padding:28px 0;" id="sold">
+        <div class="container">
+            <h2 class="section-title">Sold Cars</h2>
+            <div class="row-wrap">
+                <button class="scroll-btn left" onclick="scrollRow('rowSold', -300)">&larr;</button>
+                <div class="car-row" id="rowSold">
+                    <div class="car-card sold"><img src="sold1.jpg" alt="">
+                        <div class="meta">
+                            <div class="name">Honda City 2017</div>
+                            <div class="price">SOLD</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="scroll-btn right" onclick="scrollRow('rowSold', 300)">&rarr;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div class="container" id="contact">
+        <h2 class="section-title">Contact</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">
+            <div style="background:var(--card);padding:20px;border-radius:12px;box-shadow:0 6px 18px rgba(11,20,34,0.05)">
+                <h3 style="margin:0;color:var(--accent)">Aitsam Motors</h3>
+                <p>Akora Khattak, Pakistan</p>
+                <p><strong>Phone:</strong> <a href="tel:+923437118345">+92 343 7118345</a></p>
+            </div>
+        </div>
+    </div>
+
+    <footer>© <span id="year"></span> Aitsam Motors — All rights reserved</footer>
+
+    <!-- MODAL -->
+    <div class="modal-back" id="modalBack">
+        <div class="modal" role="dialog" aria-modal="true">
+            <button class="close-x" onclick="closeModal()">✕</button>
+            <div class="left">
+                <div id="modalGallery" class="gallery"></div>
+                <button id="galleryPrev" class="g-arrow left">❮</button>
+                <button id="galleryNext" class="g-arrow right">❯</button>
+            </div>
+            <div class="right">
+                <h3 id="modalName">Car Name</h3>
+                <div id="modalPrice" style="font-weight:800;color:var(--accent)"></div>
+                <p id="modalDesc" style="color:var(--muted)"></p>
+                <ul id="modalSpecs" style="color:var(--muted)"></ul>
+                <a id="whBtn" class="btn wh" href="#" target="_blank">WhatsApp</a>
+                <a id="callBtn" class="btn" href="#" style="background:var(--accent-2);color:#07102a">Call</a>
+            </div>
+        </div>
+    </div>
+
+    
+</body>
+
+</html>
